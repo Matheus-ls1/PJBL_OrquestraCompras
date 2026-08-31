@@ -1,17 +1,33 @@
+import { useEffect, useState } from 'react'
+import { pesquisarAlertas } from '../services/api'
+
 function formatarMoeda(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0)
 }
 
-function OportunidadesPage({ orcamentos, status }) {
-  if (status === 'loading') return <p className="state-message">Carregando combinações por loja…</p>
-  if (orcamentos.length === 0) return <p className="state-message">Nenhuma combinação disponível no momento.</p>
+function OportunidadesPage() {
+  const [alertas, setAlertas] = useState([])
+  const [status, setStatus] = useState('loading')
+  const [error, setError] = useState('')
 
-  return <section className="settings-page" id="inicio">
-    <p className="eyebrow">DETALHAMENTO DAS LOJAS</p>
-    <h1>Combinações por loja</h1>
-    <p className="hero-copy">Itens e valores recebidos para cada orçamento monitorado.</p>
-    {orcamentos.map((orcamento) => <article className="settings-card detail-card" key={orcamento.id}><div className="detail-heading"><div><h2>{orcamento.nomeAlerta}</h2><p>Status: <strong>{orcamento.status || 'MONITORADO'}</strong></p></div><span className="settings-status">Orçamento atingido</span></div><div className="product-list">{orcamento.produtos.map((produto) => <div className="product-row" key={produto.id || `${produto.item}-${produto.loja}`}><div><strong>{produto.item || produto.nomeProduto || produto.produto}</strong><p>Loja de confiança: {produto.loja || produto.nomeLoja}</p></div><strong>{formatarMoeda(produto.preco || produto.valor)}</strong></div>)}</div><div className="consolidated-summary"><span>Orçamento máximo: <strong>{formatarMoeda(orcamento.orcamentoAlvo)}</strong></span><span>Total encontrado: <strong>{formatarMoeda(orcamento.valorTotalEncontrado)}</strong></span><span>Economia: <strong>{formatarMoeda(orcamento.economia)}</strong></span></div></article>)}
-  </section>
+  async function carregarAlertas() {
+    setStatus('loading'); setError('')
+    try { setAlertas(await pesquisarAlertas()); setStatus('success') }
+    catch (requestError) { setError(requestError.message || 'Não foi possível carregar as combinações.'); setStatus('error') }
+  }
+
+  useEffect(() => { void Promise.resolve().then(carregarAlertas) }, [])
+
+  return (
+    <section className="settings-page" id="inicio">
+      <p className="eyebrow">COMBINAÇÕES POR LOJA</p><h1>Detalhamento dos alertas</h1><p className="hero-copy">Confira os produtos e as lojas de confiança vinculados a cada orçamento.</p>
+      <button className="text-button" onClick={carregarAlertas} type="button">Atualizar lista</button>
+      {status === 'loading' && <p className="state-message">Carregando combinações…</p>}
+      {status === 'error' && <div className="state-message error"><p>{error}</p><button className="outline-button" onClick={carregarAlertas} type="button">Tentar novamente</button></div>}
+      {status === 'success' && alertas.length === 0 && <p className="state-message">Nenhuma combinação cadastrada.</p>}
+      {status === 'success' && alertas.map((alerta) => <article className="settings-card" key={alerta._id || alerta.id}><div><h2>{alerta.projeto || alerta.nomeAlerta || 'Alerta sem nome'}</h2><p>Orçamento máximo: <strong>{formatarMoeda(alerta.orcamentoAlvo)}</strong></p><div className="product-list">{(alerta.produtos || []).map((produto, index) => <div className="product-row" key={`${alerta._id || alerta.id}-${index}`}><strong>{typeof produto === 'string' ? produto : produto.item || produto.nome || produto.produto}</strong><span>{typeof produto === 'object' && produto.preco ? formatarMoeda(produto.preco) : ''}</span><span>Loja: {typeof produto === 'object' ? produto.loja || produto.nomeLoja : alerta.lojas?.[index] || 'Não informada'}</span></div>)}</div></div><span className="settings-status">{alerta.status || 'MONITORADO'}</span></article>)}
+    </section>
+  )
 }
 
 export default OportunidadesPage

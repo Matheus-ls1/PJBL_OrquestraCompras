@@ -1,29 +1,27 @@
+import { useEffect, useState } from 'react'
+import CardAlerta from '../components/CardAlerta'
 import FormOrcamento from '../components/FormOrcamento'
+import { pesquisarAlertas } from '../services/api'
 
-function formatarMoeda(valor) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0)
-}
+function ConfiguracaoPage() {
+  const [alertas, setAlertas] = useState([])
+  const [status, setStatus] = useState('loading')
+  const [error, setError] = useState('')
 
-function ConfiguracaoPage({ orcamentos, status, onShowDetails }) {
+  async function carregarAlertas() {
+    setStatus('loading'); setError('')
+    try { setAlertas(await pesquisarAlertas()); setStatus('success') }
+    catch (requestError) { setError(requestError.message || 'Não foi possível carregar os alertas.'); setStatus('error') }
+  }
+
+  useEffect(() => { void Promise.resolve().then(carregarAlertas) }, [])
+
   return (
     <>
-      <section className="hero-section" id="inicio">
-        <p className="eyebrow">PAINEL DE ACOMPANHAMENTO</p>
-        <h1>Orçamentos &amp; alertas disparados</h1>
-        <p className="hero-copy">Acompanhe os alertas monitorados e consulte as combinações encontradas pelas lojas de confiança.</p>
-      </section>
-      <section className="content-grid" aria-label="Painel de orçamentos e alertas">
-        <aside className="panel budget-panel">
-          <h2>Simular novo alerta</h2>
-          <p>Preencha os dados para validar visualmente uma nova solicitação de orçamento.</p>
-          <FormOrcamento />
-        </aside>
-        <section className="opportunities-panel" aria-live="polite">
-          <div className="section-heading"><div><p className="eyebrow">ALERTAS MONITORADOS</p><h2>Orçamentos encontrados</h2></div></div>
-          {status === 'loading' && <p className="state-message">Carregando orçamentos…</p>}
-          {status === 'success' && orcamentos.length === 0 && <p className="state-message">Nenhum orçamento monitorado no momento.</p>}
-          {status === 'success' && orcamentos.length > 0 && <div className="alert-grid">{orcamentos.map((orcamento) => <article className="alert-card" key={orcamento.id}><div className="alert-card-top"><span className="store-badge">{orcamento.usuario || 'OrquestraCompras'}</span><span className="status-dot">{orcamento.status || 'MONITORADO'}</span></div><h3>{orcamento.nomeAlerta}</h3><dl className="summary-list"><div><dt>Orçamento máximo</dt><dd>{formatarMoeda(orcamento.orcamentoAlvo)}</dd></div><div><dt>Valor encontrado</dt><dd>{formatarMoeda(orcamento.valorTotalEncontrado)}</dd></div><div><dt>Economia</dt><dd>{formatarMoeda(orcamento.economia)}</dd></div></dl><button className="outline-button" onClick={onShowDetails} type="button">Ver detalhes das lojas</button></article>)}</div>}
-        </section>
+      <section className="hero-section" id="inicio"><p className="eyebrow">PAINEL DE ORÇAMENTOS</p><h1>Alertas monitorados</h1><p className="hero-copy">Crie, atualize ou remova seus alertas de orçamento.</p></section>
+      <section className="content-grid" aria-label="Cadastro e lista de alertas">
+        <aside className="panel budget-panel"><h2>Novo alerta</h2><p>Cadastre projeto, orçamento, produtos e lojas de confiança.</p><FormOrcamento onCreated={carregarAlertas} /></aside>
+        <section className="opportunities-panel" aria-live="polite"><div className="section-heading"><div><p className="eyebrow">MONGODB ATLAS</p><h2>Alertas salvos</h2></div><button className="text-button" onClick={carregarAlertas} type="button">Atualizar</button></div>{status === 'loading' && <p className="state-message">Carregando alertas…</p>}{status === 'error' && <div className="state-message error"><p>{error}</p><button className="outline-button" onClick={carregarAlertas} type="button">Tentar novamente</button></div>}{status === 'success' && alertas.length === 0 && <p className="state-message">Nenhum alerta cadastrado.</p>}{status === 'success' && alertas.length > 0 && <div className="alert-grid">{alertas.map((alerta) => <CardAlerta alerta={alerta} key={alerta._id || alerta.id} onChanged={carregarAlertas} />)}</div>}</section>
       </section>
     </>
   )

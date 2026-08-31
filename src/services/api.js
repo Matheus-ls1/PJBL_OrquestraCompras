@@ -1,47 +1,53 @@
-import { env, hasApiUrl } from '../config/env'
+import { env } from '../config/env'
 
-const mockOrcamento = {
-  id: 'alt-demo-001',
-  nomeAlerta: 'Orçamento para sala de estar',
-  usuario: 'Visitante',
-  orcamentoAlvo: 8000,
-  valorTotalEncontrado: 7850,
-  economia: 150,
-  status: 'ALERTA_DISPARADO',
-  dataVerificacao: '2026-08-31T22:37:55.902Z',
-  lojasSelecionadas: ['Magazine Luiza', 'Ponto Frio', 'MM'],
-  produtos: [
-    { id: 'produto-demo-001', item: 'Sofá Cinza 3 Lugares', preco: 2500, loja: 'Magazine Luiza' },
-    { id: 'produto-demo-002', item: 'Tapete Marrom 200x150cm', preco: 350, loja: 'Ponto Frio' },
-    { id: 'produto-demo-003', item: 'Smart TV 50" 4K', preco: 5000, loja: 'Magazine Luiza' },
-  ],
+async function lerResposta(response) {
+  const contentType = response.headers.get('content-type') || ''
+  return contentType.includes('application/json') ? response.json() : null
 }
 
-function normalizarOrcamentos(payload) {
-  const orcamentos = Array.isArray(payload)
-    ? payload
-    : payload?.orcamentos || payload?.alertas || payload?.data || [payload]
-
-  return orcamentos.filter(Boolean).map((orcamento) => ({
-    ...orcamento,
-    nomeAlerta: orcamento.nomeAlerta || orcamento.nome || orcamento.titulo || `Orçamento de ${orcamento.usuario || 'produto'}`,
-    produtos: Array.isArray(orcamento.produtos) ? orcamento.produtos : [],
-  }))
-}
-
-export async function getAlertasOrcamento() {
+async function requisitar(url, options = {}) {
   try {
-    if (!hasApiUrl) throw new Error('VITE_API_URL não foi definida.')
-
-    const response = await fetch(env.apiUrl, {
-      headers: { Accept: 'application/json' },
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json', ...options.headers },
+      ...options,
     })
-
-    if (!response.ok) throw new Error(`A API respondeu com status ${response.status}.`)
-
-    return normalizarOrcamentos(await response.json())
+    const body = await lerResposta(response)
+    if (!response.ok) throw new Error(body?.message || `A operação falhou (HTTP ${response.status}).`)
+    return body
   } catch (error) {
-    console.warn('Não foi possível consultar a API. Exibindo dados de contingência.', error)
-    return normalizarOrcamentos(mockOrcamento)
+    if (error instanceof Error) throw error
+    throw new Error('Não foi possível comunicar com o serviço de alertas.')
   }
+}
+
+function urlComId(url, id) {
+  const endpoint = new URL(url)
+  endpoint.searchParams.set('id', id)
+  return endpoint.toString()
+}
+
+export async function pesquisarAlertas() {
+  const resposta = await requisitar(env.getUrl)
+  if (Array.isArray(resposta)) return resposta
+  return resposta?.alertas || resposta?.data || []
+}
+
+export function criarAlerta(dados) {
+  return requisitar(env.postUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  })
+}
+
+export function atualizarAlerta(id, dados) {
+  return requisitar(urlComId(env.putUrl, id), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  })
+}
+
+export function excluirAlerta(id) {
+  return requisitar(urlComId(env.deleteUrl, id), { method: 'DELETE' })
 }
