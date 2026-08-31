@@ -2,6 +2,7 @@ import { env, hasApiUrl } from '../config/env'
 
 const mockOrcamento = {
   id: 'alt-demo-001',
+  nomeAlerta: 'Orçamento para sala de estar',
   usuario: 'Visitante',
   orcamentoAlvo: 8000,
   valorTotalEncontrado: 7850,
@@ -16,14 +17,15 @@ const mockOrcamento = {
   ],
 }
 
-function obterProdutos(orcamento) {
-  const produtos = Array.isArray(orcamento)
-    ? orcamento
-    : orcamento?.produtos || orcamento?.alertas || orcamento?.data || []
+function normalizarOrcamentos(payload) {
+  const orcamentos = Array.isArray(payload)
+    ? payload
+    : payload?.orcamentos || payload?.alertas || payload?.data || [payload]
 
-  return produtos.map((produto) => ({
-    ...produto,
-    produto: produto.produto || produto.nomeProduto || produto.item,
+  return orcamentos.filter(Boolean).map((orcamento) => ({
+    ...orcamento,
+    nomeAlerta: orcamento.nomeAlerta || orcamento.nome || orcamento.titulo || `Orçamento de ${orcamento.usuario || 'produto'}`,
+    produtos: Array.isArray(orcamento.produtos) ? orcamento.produtos : [],
   }))
 }
 
@@ -37,9 +39,9 @@ export async function getAlertasOrcamento() {
 
     if (!response.ok) throw new Error(`A API respondeu com status ${response.status}.`)
 
-    return obterProdutos(await response.json())
+    return normalizarOrcamentos(await response.json())
   } catch (error) {
     console.warn('Não foi possível consultar a API. Exibindo dados de contingência.', error)
-    return obterProdutos(mockOrcamento)
+    return normalizarOrcamentos(mockOrcamento)
   }
 }
