@@ -21,5 +21,5 @@ O `vite.config.js` utiliza `base: './'`, permitindo o carregamento dos assets em
 
 ## Links públicos
 
-- Aplicação: adicionar URL do GitHub Pages após a publicação.
-- Repositório: adicionar URL pública do repositório.
+- Aplicação: "https://matheus-ls1.github.io/PJBL_OrquestraCompras/".
+- Repositório: "https://github.com/Matheus-ls1/PJBL_OrquestraCompras.git".
