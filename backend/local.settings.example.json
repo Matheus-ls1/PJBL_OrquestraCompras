@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "MONGODB_URI": "mongodb+srv://<usuario>:<senha>@<cluster>/orquestraCompras?retryWrites=true&w=majority",
+    "MONGODB_DATABASE": "orquestraCompras",
+    "MONGODB_ALERTAS_COLLECTION": "alertas"
+  }
+}

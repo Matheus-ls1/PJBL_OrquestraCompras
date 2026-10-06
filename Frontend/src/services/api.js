@@ -21,9 +21,9 @@ async function requisitar(url, options = {}) {
 }
 
 function urlComId(url, id) {
-  const endpoint = new URL(url)
+  const endpoint = new URL(url, window.location.origin)
   endpoint.searchParams.set('id', id)
-  return endpoint.toString()
+  return url.startsWith('http') ? endpoint.toString() : `${endpoint.pathname}${endpoint.search}`
 }
 
 export async function pesquisarAlertas() {
