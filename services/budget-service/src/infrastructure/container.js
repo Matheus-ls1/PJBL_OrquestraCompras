@@ -1,0 +1,3 @@
+import { createSqlBudgetRepository } from './persistence/sql-budget-repository.js';
+import { randomUUID } from 'node:crypto';
+export function dependencies(overrides={}) { return { repository: overrides.repository || createSqlBudgetRepository({ server:process.env.AZURE_SQL_SERVER,port:Number(process.env.AZURE_SQL_PORT||1433),database:process.env.AZURE_SQL_DATABASE||'db_budget',authentication:process.env.AZURE_SQL_AUTHENTICATION||'azure-active-directory-default',clientId:process.env.AZURE_CLIENT_ID,poolMax:Number(process.env.AZURE_SQL_POOL_MAX||10) }), secret: overrides.secret || process.env.JWT_SECRET, now: overrides.now || (()=>new Date()), id: overrides.id || (() => randomUUID()) }; }

@@ -1,0 +1,20 @@
+{
+  "name": "orquestra-compras-bff",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "build": "node --check src/server.js && node --check src/app.js && node --check src/application/features/aggregate-data/aggregate-data.js && node --check src/infrastructure/http/service-clients.js && node --check src/api/controllers/aggregated-data-controller.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.1.4"
+  }
+}
