@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "build": "node --check src/server.js && node --check src/app.js && node --check src/application/features/aggregate-data/aggregate-data.js && node --check src/infrastructure/http/service-clients.js && node --check src/api/controllers/aggregated-data-controller.js",
+    "build": "node --check src/server.js && node --check src/app.js && node --check src/application/features/aggregate-data/aggregate-data.js && node --check src/infrastructure/http/service-clients.js && node --check src/api/controllers/aggregated-data-controller.js && node --check src/api/controllers/proxy-controller.js && node --check src/api/routes/monitoring-proxy-routes.js && node --check src/api/contracts/openapi.js",
     "test": "node --test"
   },
   "dependencies": {

@@ -1,0 +1,2 @@
+import { parseEventoOrcamentoV1 } from '../../domain/evento-orcamento.js';
+export function createProcessarEventoOrcamentoUseCase({ repository, now = () => new Date() }) { return { async execute(queueItem) { const evento = parseEventoOrcamentoV1(queueItem); const result = await repository.processarEvento(evento, now()); return { eventId: evento.eventId, duplicate: result.duplicate, snapshotUpdated: result.snapshotUpdated }; } }; }

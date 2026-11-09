@@ -6,10 +6,15 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "build": "node --check src/server.js && node --check src/app.js && node --check src/infrastructure/persistence/sql-budget-repository.js",
+    "build": "node --check src/server.js && node --check src/app.js && node --check src/infrastructure/persistence/sql-budget-repository.js && node --check src/application/features/publish-outbox/publish-outbox.js && node --check src/application/features/publish-outbox/outbox-test-config.js && node --check src/infrastructure/messaging/azure-queue-publisher.js && node --check src/workers/outbox-once.js && node --check src/workers/outbox-test.js",
+    "outbox:once": "node src/workers/outbox-once.js",
+    "outbox:test": "node src/workers/outbox-test.js",
+    "outbox:test:dry-run": "node src/workers/outbox-test.js --dry-run",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.0",
+    "@azure/storage-queue": "^12.31.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",

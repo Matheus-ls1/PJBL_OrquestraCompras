@@ -1,35 +1,35 @@
+const bearer = [{ bearerAuth: [] }];
+const id = { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } };
+const childId = { name: 'childId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } };
+const ifMatch = { name: 'if-match', in: 'header', required: true, schema: { type: 'integer' }, description: 'Versão atual do orçamento.' };
+const errors = { 400: { description: 'Entrada inválida' }, 401: { description: 'Bearer ausente, inválido ou expirado' }, 404: { description: 'Recurso não encontrado' }, 409: { description: 'Conflito de regra ou versão' }, 502: { description: 'Dependência indisponível' }, 504: { description: 'Tempo limite de dependência' } };
+const secure = (summary, responses = {}) => ({ summary, security: bearer, responses: { 200: { description: 'Sucesso' }, ...errors, ...responses } });
+const body = (schema, example) => ({ required: true, content: { 'application/json': { schema, example } } });
+const item = { type: 'object', required: ['categoria', 'descricaoRequisitos', 'opcoesAceitas', 'obrigatorio'], properties: { categoria: { type: 'string' }, descricaoRequisitos: { type: 'string' }, opcoesAceitas: { type: 'array', items: { type: 'string' } }, obrigatorio: { type: 'boolean' } } };
+const loja = { type: 'object', required: ['nome', 'urlBase', 'confiavel', 'ativa'], properties: { nome: { type: 'string' }, urlBase: { type: 'string', format: 'uri' }, confiavel: { type: 'boolean' }, ativa: { type: 'boolean' } } };
+const budget = { type: 'object', required: ['nomeProjeto', 'valorLimite'], properties: { nomeProjeto: { type: 'string' }, valorLimite: { type: 'number', minimum: 0 }, status: { type: 'string' }, itensDesejados: { type: 'array', items: item }, lojasAutorizadas: { type: 'array', items: loja } } };
+
 export const openApiDocument = {
   openapi: '3.0.3',
-  info: { title: 'OrquestraCompras BFF', version: '0.2.0', description: 'Entrada pública e agregação de dados distribuídos.' },
-  components: {
-    securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
-    schemas: {
-      ResumoFinanceiro: {
-        type: 'object', required: ['totalOrcamentos', 'somaLimites', 'mediaLimites', 'origem', 'tipoAnalise'],
-        properties: {
-          totalOrcamentos: { type: 'integer', example: 2 }, somaLimites: { type: 'number', example: 8000 },
-          mediaLimites: { type: 'number', example: 4000 }, origem: { type: 'string', example: 'azure-function' },
-          tipoAnalise: { type: 'string', example: 'RESUMO_FINANCEIRO' }
-        }
-      }
-    }
-  },
+  info: { title: 'OrquestraCompras BFF', version: '0.3.0', description: 'Única entrada HTTP do Web Shell para contas, orçamentos e agregação.' },
+  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: { ItemDesejado: item, LojaAutorizada: loja, OrcamentoRequest: budget } },
   paths: {
-    '/health': {
-      get: { summary: 'Verifica a disponibilidade do BFF', responses: { 200: { description: 'Processo ativo' } } }
-    },
-    '/aggregated-data': {
-      get: {
-        summary: 'Agrega perfil, orçamentos e resumo financeiro',
-        description: 'Consulta Identity Service e Budget Service com o JWT recebido e envia limites válidos para a Azure Function. As três fontes são obrigatórias.',
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: { description: 'Dados agregados', content: { 'application/json': { schema: { type: 'object', required: ['usuario', 'orcamentos', 'resumoFinanceiro'], properties: { usuario: { type: 'object' }, orcamentos: { type: 'array', items: { type: 'object' } }, resumoFinanceiro: { $ref: '#/components/schemas/ResumoFinanceiro' } } } } } },
-          401: { description: 'Bearer ausente ou rejeitado pelo serviço de identidade' },
-          502: { description: 'Uma dependência obrigatória retornou falha ou contrato inválido' },
-          504: { description: 'Tempo limite de uma dependência excedido' }
-        }
-      }
-    }
+    '/health': { get: { summary: 'Verifica a disponibilidade do BFF', responses: { 200: { description: 'Processo ativo' } } } },
+    '/aggregated-data': { get: { ...secure('Agrega perfil, orçamentos e resumo financeiro', { 200: { description: 'Dados das três fontes' } }), description: 'Consulta Identity e Budget com o Bearer e chama a Azure Function pelo servidor.' } },
+    '/api/v1/auth/register': { post: { summary: 'Cadastra conta', requestBody: body({ type: 'object', required: ['nome', 'email', 'senha'], properties: { nome: { type: 'string' }, email: { type: 'string', format: 'email' }, senha: { type: 'string', format: 'password' } } }, { nome: 'Ana Silva', email: 'ana@exemplo.com', senha: 'senha-segura-123' }), responses: { 201: { description: 'Conta criada' }, ...errors } } },
+    '/api/v1/auth/login': { post: { summary: 'Autentica e emite JWT', requestBody: body({ type: 'object', required: ['email', 'senha'], properties: { email: { type: 'string', format: 'email' }, senha: { type: 'string', format: 'password' } } }, { email: 'ana@exemplo.com', senha: 'senha-segura-123' }), responses: { 200: { description: 'Token emitido' }, ...errors } } },
+    '/api/v1/auth/profile': { get: secure('Consulta o próprio perfil'), put: { ...secure('Atualiza o próprio perfil'), requestBody: body({ type: 'object', properties: { nome: { type: 'string' }, email: { type: 'string', format: 'email' } } }, { nome: 'Ana Souza', email: 'ana.souza@exemplo.com' }) } },
+    '/api/v1/auth/password': { put: { ...secure('Altera senha'), requestBody: body({ type: 'object', required: ['senhaAtual', 'novaSenha'], properties: { senhaAtual: { type: 'string', format: 'password' }, novaSenha: { type: 'string', format: 'password' } } }, { senhaAtual: 'senha-segura-123', novaSenha: 'nova-senha-456' }), responses: { ...errors, 204: { description: 'Senha alterada' } } } },
+    '/api/v1/auth/account': { delete: secure('Solicita encerramento da conta', { 202: { description: 'Solicitação aceita' } }) },
+    '/api/v1/orcamentos': { get: secure('Lista os orçamentos do titular'), post: { ...secure('Cria orçamento', { 201: { description: 'Orçamento criado' } }), requestBody: body(budget, { nomeProjeto: 'Estação de trabalho', valorLimite: 8500, itensDesejados: [{ categoria: 'CPU', descricaoRequisitos: '8 núcleos', opcoesAceitas: ['Ryzen 7'], obrigatorio: true }], lojasAutorizadas: [{ nome: 'Loja confiável', urlBase: 'https://loja.exemplo', confiavel: true, ativa: true }] }) } },
+    '/api/v1/orcamentos/{id}': { parameters: [id], get: secure('Consulta orçamento'), put: { ...secure('Atualiza orçamento'), parameters: [ifMatch], requestBody: body({ type: 'object', minProperties: 1, properties: { nomeProjeto: { type: 'string' }, valorLimite: { type: 'number', minimum: 0 } } }, { valorLimite: 6000 }) }, delete: { ...secure('Exclusão lógica'), parameters: [ifMatch], responses: { ...errors, 204: { description: 'Excluído sem corpo' } } } },
+    '/api/v1/orcamentos/{id}/status': { parameters: [id], post: { ...secure('Muda status do orçamento'), parameters: [ifMatch], requestBody: body({ type: 'object', required: ['status'], properties: { status: { type: 'string' } } }, { status: 'PAUSADO' }) } },
+    '/api/v1/orcamentos/{id}/itens': { parameters: [id], get: secure('Lista itens desejados'), post: { ...secure('Adiciona item desejado', { 201: { description: 'Item criado' } }), parameters: [ifMatch], requestBody: body(item, { categoria: 'CPU', descricaoRequisitos: '8 núcleos', opcoesAceitas: ['Ryzen 7'], obrigatorio: true }) } },
+    '/api/v1/orcamentos/{id}/itens/{childId}': { parameters: [id, childId], get: secure('Consulta item desejado'), put: { ...secure('Atualiza item desejado'), parameters: [ifMatch], requestBody: body(item, { categoria: 'CPU', descricaoRequisitos: '8 núcleos', opcoesAceitas: ['Ryzen 7'], obrigatorio: true }) }, delete: { ...secure('Remove item desejado'), parameters: [ifMatch], responses: { ...errors, 204: { description: 'Removido sem corpo' } } } },
+    '/api/v1/orcamentos/{id}/lojas': { parameters: [id], get: secure('Lista lojas autorizadas'), post: { ...secure('Adiciona loja autorizada', { 201: { description: 'Loja criada' } }), parameters: [ifMatch], requestBody: body(loja, { nome: 'Loja confiável', urlBase: 'https://loja.exemplo', confiavel: true, ativa: true }) } },
+    '/api/v1/orcamentos/{id}/lojas/{childId}': { parameters: [id, childId], get: secure('Consulta loja autorizada'), put: { ...secure('Atualiza loja autorizada'), parameters: [ifMatch], requestBody: body(loja, { nome: 'Loja confiável', urlBase: 'https://loja.exemplo', confiavel: true, ativa: true }) }, delete: { ...secure('Remove loja autorizada'), parameters: [ifMatch], responses: { ...errors, 204: { description: 'Removida sem corpo' } } } }
+    ,'/api/v1/monitoramento/orcamentos/{id}/analisar': { parameters: [id], post: { ...secure('Executa análise controlada de oportunidades', { 201: { description: 'Oportunidade criada com catálogo fictício de demonstração' } }) } }
+    ,'/api/v1/monitoramento/oportunidades': { get: secure('Lista o histórico de oportunidades do titular') }
+    ,'/api/v1/monitoramento/oportunidades/{id}': { parameters: [id], get: secure('Lista oportunidades de um orçamento do titular') }
   }
 };

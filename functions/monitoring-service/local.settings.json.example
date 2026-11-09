@@ -2,6 +2,14 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "node"
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "ORCAMENTOS_EVENTOS_QUEUE_NAME": "orcamentos-eventos-teste",
+    "MONGODB_MONITORING_URI": "",
+    "MONGODB_MONITORING_DATABASE": "db_monitoring_test",
+    "MONITORING_COLLECTION_SCHEDULE": "0 */15 * * * *",
+    "MONITORING_COLLECTION_BATCH_SIZE": "20",
+    "MONITORING_COLLECTION_ENABLED": "false",
+    "MONITORING_COLLECTION_CONCURRENCY": "2",
+    "MONITORING_CATALOG_TIMEOUT_MS": "5000"
   }
 }

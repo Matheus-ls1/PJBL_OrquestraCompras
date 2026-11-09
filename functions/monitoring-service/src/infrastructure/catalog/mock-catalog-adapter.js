@@ -1,0 +1,8 @@
+const catalog = Object.freeze([
+  { ofertaId: 'mock-cpu-ryzen-7', categoria: 'CPU', produto: 'AMD Ryzen 7 7700', marcaModelo: 'AMD Ryzen 7 7700', preco: 1599.9, moeda: 'BRL', disponivel: true, loja: 'Loja', urlOrigem: 'https://catalogo.mock.local/cpu/ryzen-7', fonte: 'CATALOGO_MOCK' },
+  { ofertaId: 'mock-gpu-rtx-4060', categoria: 'GPU', produto: 'NVIDIA RTX 4060', marcaModelo: 'NVIDIA RTX 4060', preco: 2199.9, moeda: 'BRL', disponivel: true, loja: 'Loja', urlOrigem: 'https://catalogo.mock.local/gpu/rtx-4060', fonte: 'CATALOGO_MOCK' },
+  { ofertaId: 'mock-ram-ddr5', categoria: 'RAM', produto: 'DDR5 32GB', marcaModelo: 'DDR5 32GB', preco: 699.9, moeda: 'BRL', disponivel: true, loja: 'Loja', urlOrigem: 'https://catalogo.mock.local/ram/ddr5-32', fonte: 'CATALOGO_MOCK' },
+  { ofertaId: 'mock-ssd-nvme', categoria: 'SSD', produto: 'SSD NVMe 1TB', marcaModelo: 'NVMe 1TB', preco: 499.9, moeda: 'BRL', disponivel: true, loja: 'Loja', urlOrigem: 'https://catalogo.mock.local/ssd/nvme-1tb', fonte: 'CATALOGO_MOCK' }
+]);
+const text = value => String(value || '').toLowerCase();
+export function createMockCatalogAdapter({ clock = () => new Date() } = {}) { return { async consultar({ orcamentoId, item, lojas }) { const authorized = new Set(lojas.filter(loja => loja.ativa).map(loja => loja.nome)); return catalog.filter(oferta => text(oferta.categoria) === text(item.categoria) && authorized.has(oferta.loja) && (item.opcoesAceitas || []).some(option => text(oferta.produto).includes(text(option)))).map(oferta => ({ ...oferta, orcamentoId, itemId: item.id, coletadaEm: clock().toISOString() })); } }; }

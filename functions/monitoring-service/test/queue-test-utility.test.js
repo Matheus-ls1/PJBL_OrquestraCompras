@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createSyntheticEvent, loadSafeQueueTestSettings } from '../scripts/queue-test-support.js';
+import { validarEventoOrcamentoV1 } from '../src/domain/evento-orcamento.js';
+
+test('utilitário gera EventoOrcamentoV1 sintético validado pelo domínio', () => { const event = createSyntheticEvent(new Date('2026-11-09T12:00:00.000Z')); assert.deepEqual(validarEventoOrcamentoV1(event), event); assert.equal(event.snapshot.id, event.orcamentoId); assert.equal(event.snapshot.usuarioId, event.usuarioId); assert.equal(event.snapshot.versao, event.versaoEvento); });
+test('utilitário bloqueia configuração que não seja Azurite, fila e banco de teste', async () => { const valid = JSON.stringify({ Values: { AzureWebJobsStorage: 'UseDevelopmentStorage=true', ORCAMENTOS_EVENTOS_QUEUE_NAME: 'orcamentos-eventos-teste', MONGODB_MONITORING_DATABASE: 'db_monitoring_test', MONGODB_MONITORING_URI: 'mongodb://teste' } }); const values = await loadSafeQueueTestSettings(async () => valid); assert.equal(values.ORCAMENTOS_EVENTOS_QUEUE_NAME, 'orcamentos-eventos-teste'); await assert.rejects(() => loadSafeQueueTestSettings(async () => valid.replace('UseDevelopmentStorage=true', 'DefaultEndpointsProtocol=https')), /Teste bloqueado/); await assert.rejects(() => loadSafeQueueTestSettings(async () => valid.replace('orcamentos-eventos-teste', 'orcamentos-eventos')), /Teste bloqueado/); });

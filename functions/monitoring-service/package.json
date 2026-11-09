@@ -7,12 +7,17 @@
   "scripts": {
     "start": "func start",
     "test": "node --test",
-    "build": "node --check src/index.js && node --check src/domain/resumo-financeiro.js && node --check src/application/resumo-financeiro/calcular-resumo-financeiro.js && node --check src/functions/resumo-financeiro-http.js"
+    "build": "node --check src/index.js && node --check src/domain/resumo-financeiro.js && node --check src/domain/evento-orcamento.js && node --check src/domain/assinatura-monitoramento.js && node --check src/domain/oferta.js && node --check src/domain/regras-de-compra.js && node --check src/api/jwt.js && node --check src/application/resumo-financeiro/calcular-resumo-financeiro.js && node --check src/application/processar-evento-orcamento/processar-evento-orcamento.js && node --check src/application/coletar-ofertas/coletar-ofertas.js && node --check src/application/analisar-oportunidades/analisar-oportunidades.js && node --check src/infrastructure/catalog/mock-catalog-adapter.js && node --check src/infrastructure/ai/ai-engine-adapter.js && node --check src/infrastructure/persistence/mongo-eventos-monitoramento-repository.js && node --check src/infrastructure/persistence/mongo-monitoring-collection-repository.js && node --check src/functions/resumo-financeiro-http.js && node --check src/functions/processar-evento-orcamento-queue.js && node --check src/functions/coletar-ofertas-timer.js && node --check src/functions/oportunidades-http.js && node --check scripts/queue-test-support.js && node --check scripts/queue-test-send.js && node --check scripts/queue-test-verify.js",
+    "queue:test": "node scripts/queue-test-send.js",
+    "queue:test:verify": "node scripts/queue-test-verify.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "@azure/functions": "^4.6.0"
+    "@azure/functions": "^4.6.0",
+    "@azure/storage-queue": "^12.32.0",
+    "mongodb": "^7.8.0",
+    "@azure/storage-queue": "^12.32.0"
   }
 }
