@@ -1,49 +1,214 @@
-# OrquestraCompras — Etapa 01
+# OrquestraCompras
 
-Base de desenvolvimento da plataforma de apoio à decisão de compras de tecnologia. Esta etapa cria as unidades independentes e disponibiliza somente health checks; CRUDs, autenticação, filas, agregação e acesso a bancos ainda não foram implementados.
+**Projeto acadêmico --- Arquitetura Cloud \| Engenharia de Software**
 
-## Estrutura
+**Integrantes:** Angely Zambrano, Lucas Moro e Matheus Lucas.
 
-```text
-frontend/       Web Shell e microfrontends React/Vite independentes
-bff/            Entrada HTTP pública (Express)
-services/       Identity e Budget com camadas Clean Architecture
-functions/      Espaço reservado ao Monitoring Service existente/futuro
-docs/           Decisões e documentação complementar
+## 1. Descrição do projeto
+
+O **OrquestraCompras** é uma aplicação para apoiar o planejamento de
+compras. O usuário pode organizar orçamentos, definir um limite
+financeiro, cadastrar itens desejados e lojas autorizadas, além de
+acompanhar o estado de seus projetos de compra. A arquitetura prevê
+monitoramento de oportunidades e análises de apoio à decisão, com
+integração assíncrona entre serviços.
+
+## 2. Descrição da arquitetura
+
+O sistema utiliza uma **arquitetura distribuída baseada em
+microfrontends, BFF, microsserviços e processamento orientado a
+eventos**. Os componentes têm responsabilidades separadas, permitindo
+manutenção e publicação independentes.
+
+``` text
+Usuário (navegador)
+        |
+        v
+Web Shell (React/Vite)
+   |              |
+   v              v
+MFE Conta     MFE Orçamentos
+        \      /
+         v    v
+       BFF (Node.js/Express)
+        |                |
+        v                v
+ Identity Service    Budget Service
+        |                |
+        v                v
+  MongoDB Atlas       Azure SQL
+                         |
+                    Outbox (eventos)
+                         |
+                         v
+                  Azure Storage Queue
+                         |
+                         v
+              Monitoring Service
+               (Azure Functions)
+                         |
+                         v
+                   MongoDB Atlas
 ```
 
-## Pré-requisitos
+**Componentes principais:**
 
-Node.js 20+ e npm 10+. Copie cada `.env.example` para `.env` antes de configurar integrações reais. Nenhuma variável de exemplo contém segredo.
+-   **Web Shell:** aplicação que integra os microfrontends e organiza a
+    navegação.
+-   **MFE Conta:** interface das funcionalidades de cadastro,
+    autenticação e gerenciamento de conta.
+-   **MFE Orçamentos:** interface para criação, edição e acompanhamento
+    dos orçamentos.
+-   **BFF (Backend for Frontend):** camada de comunicação entre as
+    interfaces e os serviços, incluindo agregação e encaminhamento de
+    requisições.
+-   **Identity Service:** serviço responsável por usuários, autenticação
+    com JWT e gerenciamento da conta; utiliza MongoDB Atlas.
+-   **Budget Service:** serviço responsável pelos orçamentos, itens,
+    lojas e estados; utiliza Azure SQL, auditoria e padrão Transactional
+    Outbox.
+-   **Monitoring Service:** processamento de eventos e funcionalidades
+    de monitoramento por meio de Azure Functions, Azure Storage Queues e
+    persistência própria.
 
-## Executar
+O backend segue princípios de **Clean Architecture**, separação de
+responsabilidades e organização por funcionalidades (*Vertical Slice*).
+A comunicação assíncrona usa eventos e mecanismos de idempotência para
+reduzir o acoplamento entre serviços.
 
-Em terminais separados:
+## 3. Tecnologias utilizadas
 
-```powershell
-cd bff; npm run dev
-cd services/identity-service; npm run dev
-cd services/budget-service; npm run dev
-cd frontend/web-shell; npm run dev
-cd frontend/mfe-conta; npm run dev
-cd frontend/mfe-orcamentos; npm run dev
-```
+  -----------------------------------------------------------------------
+  Camada                              Tecnologias
+  ----------------------------------- -----------------------------------
+  Interface web                       React, JavaScript, Vite, HTML e CSS
 
-Os backends usam, por padrão, as portas 3000, 3001 e 3002. A interface deve consumir o BFF quando os fluxos de negócio forem implementados; ela não deve chamar os microsserviços diretamente.
+  BFF e APIs                          Node.js, Express, APIs REST, JSON e
+                                      Swagger/OpenAPI
 
-## Endpoints da etapa
+  Autenticação                        JWT e bcrypt
 
-| Unidade | Health | OpenAPI UI |
-| --- | --- | --- |
-| BFF | `GET /health` | `GET /api-docs` |
-| Identity | `GET /health` | `GET /api-docs` |
-| Budget | `GET /health` | `GET /api-docs` |
+  Persistência de identidade e        MongoDB Atlas
+  monitoramento                       
 
-O `/health` apenas confirma que o processo HTTP está ativo, sem tentar conectar a MongoDB Atlas ou Azure SQL. As variáveis de integração foram documentadas para a próxima etapa.
+  Persistência de orçamentos          Microsoft Azure SQL Database
 
-## Verificação
+  Mensageria                          Azure Storage Queues e padrão
+                                      Transactional Outbox
 
-Cada backend possui `npm test` para o endpoint de saúde e `npm run build`, que valida a sintaxe dos arquivos de produção. Cada frontend possui builds Vite independentes.
+  Processamento serverless            Azure Functions
 
-Consulte [docs/arquitetura-etapa-01.md](docs/arquitetura-etapa-01.md) para as decisões aplicadas nesta fundação.
+  Infraestrutura                      Microsoft Azure, Azure Container
+                                      Apps e Docker
 
+  Práticas de arquitetura             Microfrontends, microsserviços,
+                                      Clean Architecture e Event-Driven
+                                      Architecture
+  -----------------------------------------------------------------------
+
+## 4. Como executar localmente
+
+### 4.1 Pré-requisitos
+
+-   Node.js e npm compatíveis com os projetos;
+-   Git;
+-   Docker, quando necessário para dependências locais;
+-   Azure Functions Core Tools para o Monitoring Service;
+-   Acesso autorizado ao MongoDB Atlas e ao Azure SQL;
+-   Azure CLI (`az login`) caso a conexão local com Azure SQL utilize
+    Microsoft Entra ID;
+-   Azurite ou uma conta de Azure Storage para o processamento local das
+    filas.
+
+### 4.2 Configuração
+
+1.  Clone o repositório e localize as pastas de cada módulo
+    (`web-shell`, `mfe-conta`, `mfe-orcamentos`, `bff`,
+    `identity-service`, `budget-service` e `monitoring-service`). Os
+    diretórios podem estar agrupados em subpastas, conforme a
+    organização do repositório.
+2.  Em cada projeto Node.js, instale as dependências com `npm install`.
+3.  Configure os arquivos de ambiente conforme os exemplos e as
+    instruções do respectivo módulo. **Não publique senhas, tokens,
+    strings de conexão ou arquivos `.env`/`local.settings.json` com
+    segredos.**
+4.  Inicialize os bancos, filas e serviços necessários antes de executar
+    os módulos dependentes.
+
+### 4.3 Iniciar os módulos
+
+Execute os comandos a seguir **dentro da pasta de cada módulo**:
+
+  Módulo               Comandos usuais
+  -------------------- ----------------------------------------------
+  Web Shell            `npm install` e `npm run dev`
+  MFE Conta            `npm install` e `npm run dev`
+  MFE Orçamentos       `npm install` e `npm run dev`
+  BFF                  `npm install` e `npm run dev` ou `npm start`
+  Identity Service     `npm install` e `npm run dev` ou `npm start`
+  Budget Service       `npm install` e `npm run dev` ou `npm start`
+  Monitoring Service   `npm install` e `func start`
+
+> **Observação:** confira `scripts` no `package.json` de cada módulo
+> antes de executar os comandos. As portas, variáveis e caminhos exatos
+> devem seguir a configuração do repositório.
+
+### 4.4 Dependências específicas
+
+**Identity Service:** requer conexão válida com MongoDB Atlas e
+configuração de autenticação JWT.
+
+**Budget Service:** requer acesso ao banco Azure SQL e configuração das
+variáveis de conexão, incluindo `AZURE_SQL_SERVER`, `AZURE_SQL_DATABASE`
+e `AZURE_SQL_AUTHENTICATION`. Na autenticação local por Entra ID, faça
+`az login` com uma conta autorizada no banco.
+
+**Monitoring Service:** requer configurações do Azure Functions,
+armazenamento para filas e, quando utilizado localmente, Azurite. O
+arquivo `local.settings.json` deve permanecer fora do controle de versão
+caso contenha credenciais.
+
+## 5. Aplicação publicada na nuvem
+
+**Budget Service --- API de orçamentos (Azure Container Apps):**
+
+https://orquestracompras-budget.blackbeach-dd42c837.brazilsouth.azurecontainerapps.io
+
+**Endpoint de verificação de execução (health):**
+
+https://orquestracompras-budget.blackbeach-dd42c837.brazilsouth.azurecontainerapps.io/health
+
+**Endpoint de verificação de dependências (readiness):**
+
+https://orquestracompras-budget.blackbeach-dd42c837.brazilsouth.azurecontainerapps.io/readiness
+
+A rota `/health` verifica se o serviço está respondendo; `/readiness`
+depende também de suas integrações, como o banco de dados, e pode
+indicar indisponibilidade quando uma dependência não estiver acessível.
+
+**Importante:** o endereço acima corresponde à **API do Budget
+Service**, não à interface web completa. Para a apresentação em vídeo,
+demonstrar os endereços públicos efetivamente implantados na
+internet/Azure, em vez de utilizar `localhost` como evidência de
+publicação.
+
+## 6. Organização dos projetos
+
+  Projeto                Responsabilidade
+  ---------------------- ------------------------------------------
+  `web-shell`            Integração dos microfrontends
+  `mfe-conta`            Interface de conta e autenticação
+  `mfe-orcamentos`       Interface de gestão de orçamentos
+  `bff`                  Integração frontend/backend
+  `identity-service`     Identidade e autenticação
+  `budget-service`       Orçamentos e persistência Azure SQL
+  `monitoring-service`   Processamento de eventos e monitoramento
+
+Cada projeto possui um `README.md` próprio com sua função, tecnologias,
+execução local e informações de publicação disponíveis.
+
+## 7. Integrantes
+
+-   Angely Zambrano
+-   Lucas Moro
+-   Matheus Lucas
